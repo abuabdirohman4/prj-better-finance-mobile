@@ -1,37 +1,50 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useRef } from "react";
+import { BackHandler, StyleSheet, View, StatusBar } from "react-native";
+import { WebView } from "react-native-webview";
+import type { WebViewNavigation } from "react-native-webview/lib/WebViewTypes";
 
-import { TabBarIcon } from '@/components/navigation/TabBarIcon';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
+export default function WebLayout() {
+  const webViewRef = useRef<WebView>(null);
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  const handleBackPress = () => {
+    if (webViewRef.current) {
+      webViewRef.current.goBack();
+      return true; // Prevent default behavior (exit app)
+    }
+    return false; // Allow default behavior
+  };
+
+  useEffect(() => {
+    BackHandler.addEventListener("hardwareBackPress", handleBackPress);
+    return () => {
+      BackHandler.removeEventListener("hardwareBackPress", handleBackPress);
+    };
+  }, []);
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name={focused ? 'home' : 'home-outline'} color={color} />
-          ),
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" />
+      <WebView
+        ref={webViewRef}
+        source={{ uri: "https://financial.abuabdirohman.com/" }}
+        onNavigationStateChange={(navState: WebViewNavigation) => {
+          if (navState.canGoBack) {
+            BackHandler.addEventListener("hardwareBackPress", handleBackPress);
+          } else {
+            BackHandler.removeEventListener(
+              "hardwareBackPress",
+              handleBackPress
+            );
+          }
         }}
       />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color, focused }) => (
-            <TabBarIcon name={focused ? 'code-slash' : 'code-slash-outline'} color={color} />
-          ),
-        }}
-      />
-    </Tabs>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    marginTop: 30, // Adjust this value as needed
+  },
+});
